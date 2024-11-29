@@ -18,8 +18,9 @@
 #define YDOWN 1
 
 //
-#define AJDUST_TIME_INTERVAL 100   // miliseconds
-#define Y_SPEED_PER_MILIMETER 0.2  // milimeter
+#define AJDUST_TIME_INTERVAL 500   // miliseconds
+#define Y_SPEED_PER_MILIMETER 1  // milimeter
+#define Y_NEXT_PREDICTION_POINT 10 //  milimeter
 
 // Define Project Circle:
 float radius = 735;
@@ -76,15 +77,17 @@ void loop() {
     passedTime = millis();
 
     float currentYPosition = MotorY.currentPosition();
+    float currentXPosition = MotorX.currentPosition();
 
     float diffYPosition = currentYPosition - startYPosition;
     float diffY = diffYPosition / STEPS_PER_MM_Y;
     float currentY = startY - diffY;
     float currentX = sqrt(radius * radius - currentY * currentY) * -1;
-    float next_Y = currentY - Y_SPEED_PER_MILIMETER;
+    float next_Y = currentY - Y_NEXT_PREDICTION_POINT;
     float next_X = sqrt(radius * radius - next_Y * next_Y) * -1;
     float diff_new_X = next_X - currentX;
-    float SpeedX = abs(diff_new_X) * STEPS_PER_MM_X;
+    float diff_new_X_position = abs(diff_new_X) * STEPS_PER_MM_X;
+    float SpeedX = diff_new_X_position / (Y_NEXT_PREDICTION_POINT / Y_SPEED_PER_MILIMETER); 
     Serial.println(                                                            
               String("#START#") + 
                " diff Y pos: " + String(diffYPosition, 0 ) +               
@@ -95,6 +98,7 @@ void loop() {
                ", next X: " + String(next_X, 5 ) +
                ", diff new X: " + String(diff_new_X, 5 ) +
                ", SpeedX: " + String(SpeedX, 5) +
+               ", currentXPosition: " + String(currentXPosition, 1) +               
                "#END#");
 
     // get current position    
