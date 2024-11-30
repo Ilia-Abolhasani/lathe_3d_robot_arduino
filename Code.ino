@@ -1,142 +1,106 @@
 #include <AccelStepper.h>
 
-// Define motor pins
-#define MX_EN_PIN 13 // D7
-#define MX_STEP_PIN 14 // D5
-#define MX_DIR_PIN 12 // D6
+// Motor pins
+#define MX_EN_PIN 13
+#define MX_STEP_PIN 14
+#define MX_DIR_PIN 12
 
-#define MY_EN_PIN 16 //D0
-#define MY_STEP_PIN 4 //D2
-#define MY_DIR_PIN 5 //D1
+#define MY_EN_PIN 16
+#define MY_STEP_PIN 4
+#define MY_DIR_PIN 5
 
-
-// Direction signs
-#define XFORWARD -1
-#define XBACK 1
-
-#define YUP -1
-#define YDOWN 1
-
-//
-#define AJDUST_TIME_INTERVAL 500   // miliseconds
-#define Y_SPEED_PER_MILIMETER 1  // milimeter
-#define Y_NEXT_PREDICTION_POINT 10 //  milimeter
-
-// Define Project Circle:
-float radius = 735;
-float start_degree = 210.00447; // old number: 209.769808;
-
-
-const float STEPS_PER_MM_X = 4 * 843.6;       // Steps per mm for Motor X
-const float STEPS_PER_MM_Y = 6.666 * 1106.5;  // Steps per mm for Motor Y
-
-
-int MOTORY_SPEED_STEPS = YDOWN * STEPS_PER_MM_Y * Y_SPEED_PER_MILIMETER;
-unsigned long startTime, passedTime;  // Variable to store the start time
-float startX, startY;
-float startXPosition, startYPosition;
+// Constants
+#define STEPS_PER_MM_X 4 * 843.6
+#define STEPS_PER_MM_Y 6.666 * 1106.5
+#define UPDATE_INTERVAL 50  // Time interval for updates in milliseconds
 
 AccelStepper MotorX(AccelStepper::DRIVER, MX_STEP_PIN, MX_DIR_PIN);
 AccelStepper MotorY(AccelStepper::DRIVER, MY_STEP_PIN, MY_DIR_PIN);
 
+// Arc Parameters
+float radius = 735.0;              // Radius in mm
+float start_degree = 210.00447;    // Start angle in degrees
+float end_degree = 218.0;          // End angle in degrees
+float angular_velocity = 0.05;      // Degrees per second
+
+unsigned long lastUpdateTime = 0;  // Last time speeds were updated
+float current_angle;               // Current angle in degrees
 
 void setup() {
   delay(10000);
-  // Start serial communication for monitoring
   Serial.begin(115200);
 
-  // enable drivers
-  digitalWrite(MX_EN_PIN, HIGH);
-  digitalWrite(MY_EN_PIN, HIGH);
-
-  // Configure motors
-  // Max Speed
   MotorX.setMaxSpeed(10000);
   MotorY.setMaxSpeed(10000);
+  MotorX.setAcceleration(5000);
+  MotorY.setAcceleration(5000);
 
-  // Set Acceleration
-  // MotorX.setAcceleration(1000);
-  // MotorY.setAcceleration(1000);
+  // Initialize angle
+  current_angle = start_degree;
 
-  // Y axis move per second  
-  MotorY.setSpeed(MOTORY_SPEED_STEPS);
-  // MotorY.moveTo(YUP * stepsPerMmY * 35);
-
-  // start situation:
-  startTime = millis();
-  passedTime = startTime;
-
-  startXPosition = MotorX.currentPosition();
-  startYPosition = MotorY.currentPosition();      
-  startX = radius * cos(start_degree * PI / 180.0);
-  startY = radius * sin(start_degree * PI / 180.0);
+  // Enable motors
+  digitalWrite(MX_EN_PIN, HIGH);
+  digitalWrite(MY_EN_PIN, HIGH);
 }
 
-void loop() {    
-  if ((millis() - passedTime) >= AJDUST_TIME_INTERVAL) {
-    passedTime = millis();
+void loop() {
+  unsigned long currentTime = millis();
 
-    float currentYPosition = MotorY.currentPosition();
-    float currentXPosition = MotorX.currentPosition();
+  // Update motor speeds at regular intervals
+  if (currentTime - lastUpdateTime >= UPDATE_INTERVAL) {
+    lastUpdateTime = currentTime;
 
-    float diffYPosition = currentYPosition - startYPosition;
-    float diffY = diffYPosition / STEPS_PER_MM_Y;
-    float currentY = startY - diffY;
-    float currentX = sqrt(radius * radius - currentY * currentY) * -1;
-    float next_Y = currentY - Y_NEXT_PREDICTION_POINT;
-    float next_X = sqrt(radius * radius - next_Y * next_Y) * -1;
-    float diff_new_X = next_X - currentX;
-    float diff_new_X_position = abs(diff_new_X) * STEPS_PER_MM_X;
-    float SpeedX = diff_new_X_position / (Y_NEXT_PREDICTION_POINT / Y_SPEED_PER_MILIMETER); 
-    Serial.println(                                                            
-              String("#START#") + 
-               " diff Y pos: " + String(diffYPosition, 0 ) +               
-               ", diff Y mm: " + String(diffY, 5 ) +
-               ", cur X: " + String(currentX, 5 ) +
-               ", cur Y: " + String(currentY, 5 ) +               
-               ", next Y: " + String(next_Y, 5 ) +
-               ", next X: " + String(next_X, 5 ) +
-               ", diff new X: " + String(diff_new_X, 5 ) +
-               ", SpeedX: " + String(SpeedX, 5) +
-               ", currentXPosition: " + String(currentXPosition, 1) +               
-               "#END#");
+    // Calculate the current X and Y positions
+    float x = radius * cos(current_angle * PI / 180.0);
+    float y = radius * sin(current_angle * PI / 180.0);
 
-    // get current position    
-    // float currentXPosition = MotorX.currentPosition();
-    // float currentYPosition = MotorY.currentPosition();
-            
-    // float diffXPosition = currentXPosition - startXPosition;
-    // float diffYPosition = currentYPosition - startYPosition;    
+    // Calculate the next angle based on angular velocity
+    current_angle += angular_velocity * (UPDATE_INTERVAL / 1000.0);
 
-    // float diffX = diffXPosition / STEPS_PER_MM_X;
-    // float diffY = diffYPosition / STEPS_PER_MM_Y;
-            
-    // float currentX = startX + diffX;
-    // float currentY = startY - diffY;           
-            
-    // // next point     
-    // float next_Y = currentY - Y_SPEED_PER_MILIMETER;    
-    // float next_X = sqrt(radius * radius - next_Y * next_Y) * -1;
-    // float diff_new_X = next_X - currentX;
-    // float SpeedX = abs(diff_new_X) * STEPS_PER_MM_X ;        
-    // MotorX.setSpeed(SpeedX);
-    // Serial.println(                        
-    //            "diff X pos: " + String(diffXPosition, 0 ) + 
-    //            ", diff Y pos: " + String(diffYPosition, 0 ) +
-    //            ", diff X mm: " + String(diffX, 5 ) +
-    //            ", diff Y mm: " + String(diffY, 5 ) +
-    //            ", cur X: " + String(currentX, 5 ) +
-    //            ", cur Y: " + String(currentY, 5 ) +               
-    //            ", next Y: " + String(next_Y, 5 ) +
-    //            ", next X: " + String(next_X, 5 ) +
-    //            ", diff new X: " + String(diff_new_X, 5 ) +
-    //            ", SpeedX: " + String(SpeedX, 5));
-    MotorX.setSpeed(SpeedX);
+    // Limit the angle to the end degree
+    if (current_angle >= end_degree) {
+      current_angle = end_degree;
+      MotorX.setSpeed(0);
+      MotorY.setSpeed(0);
+      return;
+    }
+
+    // Calculate the instantaneous speeds required
+    float dx = -radius * sin(current_angle * PI / 180.0);  // Derivative of x
+    float dy = radius * cos(current_angle * PI / 180.0);   // Derivative of y
+
+    // Normalize speeds to maintain proportional motion
+    float speedX = dx * STEPS_PER_MM_X;
+    float speedY = dy * STEPS_PER_MM_Y;
+
+    float max_speed = 5000;  // Max allowable speed in steps per second
+    float magnitude = sqrt(speedX * speedX + speedY * speedY);
+
+    if (magnitude > max_speed) {
+      float scale_factor = max_speed / magnitude;
+      speedX *= scale_factor;
+      speedY *= scale_factor;
+    }
+
+
+    // Set motor speeds
+    MotorX.setSpeed(speedX);
+    MotorY.setSpeed(speedY * -1);
+
+    // Debugging information
+    Serial.print("dx: ");
+    Serial.print(dx);
+    Serial.print(" | dy: ");
+    Serial.print(dy);
+    Serial.print(" | Angle: ");
+    Serial.print(current_angle);
+    Serial.print(" | X Speed: ");
+    Serial.print(speedX);
+    Serial.print(" | Y Speed: ");
+    Serial.println(speedY);
   }
+
+  // Run the motors continuously
   MotorX.runSpeed();
   MotorY.runSpeed();
-  //MotorX.stop();
 }
-
-
-//  startX: -638.00, startY: -364.94,
