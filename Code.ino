@@ -16,12 +16,12 @@ AccelStepper MotorX(AccelStepper::DRIVER, MX_STEP_PIN, MX_DIR_PIN);
 AccelStepper MotorY(AccelStepper::DRIVER, MY_STEP_PIN, MY_DIR_PIN);
 
 // Arc Parameters
-const long STEPS_PER_MM_X = 4 * 843.6;
+const long STEPS_PER_MM_X = 4 * 847;
 const long STEPS_PER_MM_Y = 6.666 * 1106.5;
 float radius = 735.0;              // Radius in mm
 float start_degree = 210.00447;    // Start angle in degrees
 float end_degree = 216.6093;          // End angle in degrees8
-float angular_velocity_per_degree = 25; // Time to move one degree (in seconds)
+float angular_velocity_per_degree = 400; // Time to move one degree (in seconds)
 
 unsigned long lastUpdateTime = 0;  // Last time speeds were updated
 float current_angle;               // Current angle in degrees
