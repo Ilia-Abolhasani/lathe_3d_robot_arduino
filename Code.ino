@@ -52,6 +52,137 @@ const char index_html[] PROGMEM = R"rawliteral(
     h1 {
       color: #333;
     }
+    .a-button {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 10px 20px;
+      background-color: #008CBA;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    .section {
+      margin: 20px auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      width: 300px;
+    }    
+    .parameter-controls input {
+      width: 80%;
+      padding: 8px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .manual-controls {
+      display: grid;
+      grid-template-rows: 50px 50px 50px;
+      grid-template-columns: 50px 50px 50px;
+      gap: 5px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .manual-controls button {
+      width: 50px;
+      height: 50px;
+      font-size: 14px;
+      background-color: #ccc;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .manual-controls .up { grid-row: 1; grid-column: 2; }
+    .manual-controls .left { grid-row: 2; grid-column: 1; }
+    .manual-controls .stop { grid-row: 2; grid-column: 2; background-color: #f44336; color: white; border-radius: 50%; }
+    .manual-controls .right { grid-row: 2; grid-column: 3; }
+    .manual-controls .down { grid-row: 3; grid-column: 2; }
+    .step-controls {      
+      text-align: left;
+    }    
+    .radio-buttons {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <a class="a-button" href="/fix-move">تراش ثابت</a>
+  <a class="a-button" href="/curve-move">تراش منحنی</a>        
+  <!-- Step Size Controls -->
+  <h2>گام حرکت دستی</h2>
+  <div class="section step-controls">
+    <label>
+      <input class="radio-buttons" type="radio" name="step-size" value="5"> 5 mm      
+    </label><br>
+    <label>
+      <input class="radio-buttons" type="radio" name="step-size" value="1"> 1 mm
+      
+    </label><br>
+    <label>
+      <input class="radio-buttons" type="radio" name="step-size" value="0.1"> 0.1 mm
+    </label><br>
+    <label>
+      <input class="radio-buttons" type="radio" name="step-size" value="0.05"> 0.05 mm
+    </label><br>
+    <label>
+      <input class="radio-buttons" type="radio" name="step-size" value="0.01" checked> 0.01 mm
+    </label>
+  </div>
+
+  <!-- Manual Controls -->
+  <h2>کنترل دستی</h2>
+  <div class="section manual-controls">
+    <button class="up" onclick="moveMotor('up')">▲</button>
+    <button class="left" onclick="moveMotor('left')">◄</button>
+    <button class="stop" onclick="stopMotor()">●</button>
+    <button class="right" onclick="moveMotor('right')">►</button>
+    <button class="down" onclick="moveMotor('down')">▼</button>
+  </div>    
+
+  <script>      
+    function moveMotor(direction) {
+      const stepSize = document.querySelector('input[name="step-size"]:checked').value;
+      fetch(`/control/manualMove?direction=${direction}&stepSize=${stepSize}`);
+    }
+
+    function stopMotor() {
+      fetch(`/control/stopManualMove`);
+    }        
+  </script>
+</body>
+</html>
+)rawliteral";
+
+
+const char curve_move_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تراش منحنی</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+    }
+    .fix-move-button {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 10px 20px;
+      background-color: #008CBA;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
     .section {
       margin: 20px auto;
       padding: 20px;
@@ -92,135 +223,188 @@ const char index_html[] PROGMEM = R"rawliteral(
       border: none;
       border-radius: 5px;
       cursor: pointer;
-    }
-    .manual-controls {
-      display: grid;
-      grid-template-rows: 50px 50px 50px;
-      grid-template-columns: 50px 50px 50px;
-      gap: 5px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .manual-controls button {
-      width: 50px;
-      height: 50px;
-      font-size: 14px;
-      background-color: #ccc;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .manual-controls .up { grid-row: 1; grid-column: 2; }
-    .manual-controls .left { grid-row: 2; grid-column: 1; }
-    .manual-controls .stop { grid-row: 2; grid-column: 2; background-color: #f44336; color: white; border-radius: 50%; }
-    .manual-controls .right { grid-row: 2; grid-column: 3; }
-    .manual-controls .down { grid-row: 3; grid-column: 2; }
-    .step-controls {      
-      text-align: left;
     }    
-    .radio-buttons {
-      width: 20px;
-  height: 20px;
-  margin-right: 10px;
-  cursor: pointer;
-    }
   </style>
 </head>
 <body>
-  <h1>Motor Control</h1>
-
-  <!-- Start/Stop Controls -->
-  <div class="section control-buttons">
-    <button class="start" onclick="sendStart()">Start</button>
-    <button class="stop" onclick="sendStop()">Stop</button>
-  </div>
+  <a class="fix-move-button" href="/">بازگشت</a>
+  <h1>تراشیدن منحنی</h1>
 
   <!-- Parameter Controls -->
   <div class="section parameter-controls">
-    <h2>Set Parameters</h2>
-    <label for="speed">Speed (degrees/sec):</label><br>
-    <input type="number" id="speed" name="speed" value="400" min="0" oninput="updateTimeEstimation()"><br>
-    <button onclick="sendSpeed()">Set Speed</button>
-    <div id="total-time">Estimated Total Time: -- minutes</div>
+    <h2>تنظیم زمان سپری شدن یک درجه برحسب ثانیه</h2>    
+    <input type="number" id="speed" name="speed" value="400" min="0" oninput="updateTimeEstimation()"><br>    
+    <div id="total-time">زمان کلی : -- دقیقه</div>
   </div>
 
-
-  <!-- Step Size Controls -->
-  <h2>Step Size</h2>
-  <div class="section step-controls">
-    <label>
-      <input class="radio-buttons" type="radio" name="step-size" value="5"> 5 mm      
-    </label><br>
-    <label>
-      <input class="radio-buttons" type="radio" name="step-size" value="1"> 1 mm
-      
-    </label><br>
-    <label>
-      <input class="radio-buttons" type="radio" name="step-size" value="0.1"> 0.1 mm
-    </label><br>
-    <label>
-      <input class="radio-buttons" type="radio" name="step-size" value="0.05"> 0.05 mm
-    </label><br>
-    <label>
-      <input class="radio-buttons" type="radio" name="step-size" value="0.01" checked> 0.01 mm
-    </label>
+  <!-- Start/Stop Controls -->
+  <div class="section control-buttons">
+    <button class="start" onclick="sendStart()">شروع</button>
+    <button class="stop" onclick="sendStop()">توقف</button>
   </div>
-
-  <!-- Manual Controls -->
-  <h2>Manual Control</h2>
-  <div class="section manual-controls">
-    <button class="up" onclick="moveMotor('up')">▲</button>
-    <button class="left" onclick="moveMotor('left')">◄</button>
-    <button class="stop" onclick="stopMotor()">●</button>
-    <button class="right" onclick="moveMotor('right')">►</button>
-    <button class="down" onclick="moveMotor('down')">▼</button>
-  </div>    
-
+    
   <script>
     function sendStart() {
-      fetch(`/control/start`);
+      fetch(`/curve-move/control/start`);
     }
 
     function sendStop() {
-      fetch(`/control/stop`);
-    }
+      fetch(`/curve-move/control/stop`);
+    }        
 
-    function sendSpeed() {
-      const speed = document.getElementById('speed').value;
-      fetch(`/control/setSpeed?speed=${speed}`);
-    }
-
-    function moveMotor(direction) {
-      const stepSize = document.querySelector('input[name="step-size"]:checked').value;
-      fetch(`/control/manualMove?direction=${direction}&stepSize=${stepSize}`);
-    }
-
-    function stopMotor() {
-      fetch(`/control/stopManualMove`);
-    }
-    
     function updateTimeEstimation() {
       const speed = document.getElementById('speed').value;
       if (speed > 0) {
-        const totalTime = (6.6 * speed) / 60; 
-        document.getElementById('total-time').innerText = `Estimated Total Time: ${totalTime.toFixed(0)} minutes`;
-      } else {
-        document.getElementById('total-time').innerText = 'Estimated Total Time: -- minutes';
-      }
+        const speed = document.getElementById('speed').value;
+        fetch(`/curve-move/control/setSpeed?speed=${speed}`);
+        const totalSeconds = (6.6 * speed); // Total time in seconds
+        const minutes = Math.floor(totalSeconds / 60); // Extract minutes
+        const seconds = Math.floor(totalSeconds % 60); // Extract remaining seconds
+        document.getElementById('total-time').innerText = `زمان کلی : ${minutes} دقیقه و ${seconds} ثانیه`;
+      }              
     }    
-    window.onload = function() {
-      fetch('/control/getSpeed')
+    
+    fetch('/curve-move/control/getSpeed')
         .then(response => response.text())
         .then(speed => {
           document.getElementById('speed').value = speed;
           updateTimeEstimation();
-        });
-    }
-
+    });    
   </script>
 </body>
 </html>
 )rawliteral";
+
+const char fix_move_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تراش ثابت</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+    }
+    .section {
+      margin: 20px auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      width: 300px;
+    }
+    .button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .start {
+      background-color: #4CAF50; /* Green */
+      color: white;
+    }
+    .stop {
+      background-color: #f44336; /* Red */
+      color: white;
+    }
+    input {
+      width: 80%;
+      padding: 8px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .back-button {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 10px 20px;
+      background-color: #008CBA;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <a class="back-button" href="/">بازگشت</a>    
+  <!-- Parameters Section -->
+  <div class="section">
+    <h1>تنظیم سرعت موتورها</h1>
+    <h2>مقدارها بر حسب میلیمتر بر دقیقه است</h2>
+    <label for="motorXSpeed">Motor X: (حرکت جلو و عقب)</label><br>
+    <input type="number" id="motorXSpeed" name="motorXSpeed" value="10" min="0" oninput="updateMotorXSpeed()"><br><br>
+
+    <label for="motorYSpeed">Motor Y: (حرکت بالا و پایین)</label><br>
+    <input type="number" id="motorYSpeed" name="motorYSpeed" value="10" min="0" oninput="updateMotorYSpeed()"><br>
+  </div>
+  
+  <!-- Control Buttons -->
+  <div class="section">
+    <button class="button start" onclick="startAlgorithm()">شروع</button>
+    <button class="button stop" onclick="stopAlgorithm()">توقف</button>
+  </div>
+  
+  <script>
+    function updateMotorXSpeed() {
+      const speed = document.getElementById('motorXSpeed').value;
+      if (speed > 0) {        
+        fetch(`/fix-move/control/setSpeed/X?speed=${speed}`);        
+      }              
+    }    
+
+    function updateMotorYSpeed() {
+      const speed = document.getElementById('motorYSpeed').value;
+      if (speed > 0) {        
+        fetch(`/fix-move/control/setSpeed/Y?speed=${speed}`);        
+      }              
+    }    
+
+    fetch('/fix-move/control/getSpeed/X')
+        .then(response => response.text())
+        .then(speed => {
+          document.getElementById('motorXSpeed').value = speed;          
+    });    
+
+    fetch('/fix-move/control/getSpeed/Y')
+        .then(response => response.text())
+        .then(speed => {
+          document.getElementById('motorYSpeed').value = speed;          
+    });    
+    
+
+    function startAlgorithm() {
+      const motorXSpeed = document.getElementById('motorXSpeed').value;
+      const motorYSpeed = document.getElementById('motorYSpeed').value;
+
+      if (motorXSpeed && motorYSpeed) {
+        fetch(`/fix-move/control/start?motorXSpeed=${motorXSpeed}&motorYSpeed=${motorYSpeed}`)
+          .then(response => response.text())
+          .then(data => console.log(data))
+          .catch(error => console.error('Error:', error));
+      } else {
+        alert('Please enter valid speeds for both motors.');
+      }
+    }
+
+    function stopAlgorithm() {
+      fetch('/fix-move/control/stop')
+        .then(response => response.text())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
+    }
+  </script>
+</body>
+</html>
+)rawliteral";
+
 
 // Arc Parameters
 const long STEPS_PER_MM_X = 4 * 847;
@@ -230,7 +414,14 @@ float start_degree = 210.00447;           // Start angle in degrees
 float end_degree = 216.6093;              // End angle in degrees8
 float angular_velocity_per_degree = 400;  // Time to move one degree (in seconds)
 
-bool isRunning = false;
+
+// fix speed parameter
+float fix_motor_x_speed = 10;
+float fix_motor_y_speed = 10;
+
+
+bool isCurveRunning = false;
+bool isFixRunning = false;
 bool isManualMoveActive = false;
 unsigned long lastUpdateTime = 0;  // Last time speeds were updated
 float current_angle;               // Current angle in degrees
@@ -242,14 +433,14 @@ long loop_counter = 0;
 
 void setupMotors() {
   MotorX.setMaxSpeed(10000);
-  MotorY.setMaxSpeed(10000);  
+  MotorY.setMaxSpeed(10000);
   digitalWrite(MX_EN_PIN, HIGH);
   digitalWrite(MY_EN_PIN, HIGH);
 }
 
 // WiFi setup
-void setupWiFi() {  
-  Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");  
+void setupWiFi() {
+  Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
   Serial.println(WiFi.softAP(ssid, password) ? "Ready" : "Failed!");
   Serial.print("Soft-AP IP address = ");
   Serial.println(WiFi.softAPIP());
@@ -259,31 +450,74 @@ void setupWiFi() {
 
 // Web server setup
 void setupServer() {
+  // for main page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
     request->send_P(200, "text/html", index_html);
   });
 
-  // Handle start action
-  server.on("/control/start", HTTP_GET, [](AsyncWebServerRequest* request) {
+
+  server.on("/control/manualMove", HTTP_GET, [](AsyncWebServerRequest* request) {
+    if (request->hasParam("direction") && request->hasParam("stepSize")) {
+      String direction = request->getParam("direction")->value();
+      String stepSizeStr = request->getParam("stepSize")->value();
+      float stepSize = stepSizeStr.toFloat();
+      MotorX.setAcceleration(1000);
+      MotorY.setAcceleration(1000);
+      isManualMoveActive = true;
+      // Get the current positions
+      long currentX = MotorX.currentPosition();
+      long currentY = MotorY.currentPosition();
+      if (direction == "up") {
+        MotorY.moveTo(currentY - (STEPS_PER_MM_Y * stepSize));
+      } else if (direction == "down") {
+        MotorY.moveTo(currentY + (STEPS_PER_MM_Y * stepSize));
+      } else if (direction == "left") {
+        MotorX.moveTo(currentX + (STEPS_PER_MM_X * stepSize));
+      } else if (direction == "right") {
+        MotorX.moveTo(currentX - (STEPS_PER_MM_X * stepSize));
+      } else {
+        MotorX.setAcceleration(0);
+        MotorY.setAcceleration(0);
+        Serial.println("Invalid direction parameter");
+        request->send(400, "text/plain", "Invalid direction parameter");
+        return;
+      }
+      request->send(200, "text/plain", "Manual move executed");
+    } else {
+      request->send(400, "text/plain", "Missing direction or stepSize parameter");
+    }
+  });
+
+  server.on("/control/stopManualMove", HTTP_GET, [](AsyncWebServerRequest* request) {
+    Serial.println("Stop motor...");
+    isManualMoveActive = false;
+    MotorX.setSpeed(0);
+    MotorY.setSpeed(0);
+    MotorX.moveTo(MotorX.currentPosition());  // Reset moveTo to current position
+    MotorY.moveTo(MotorY.currentPosition());  // Reset moveTo to current position
+    request->send(200, "text/plain", "Motor stopped");
+  });
+
+
+  server.on("/curve-move/control/start", HTTP_GET, [](AsyncWebServerRequest* request) {
     Serial.println("Start command received...");
-    isRunning = true;
+    isCurveRunning = true;
     request->send(200, "text/plain", "Motor started");
   });
 
-  // Handle stop action
-  server.on("/control/stop", HTTP_GET, [](AsyncWebServerRequest* request) {
+  server.on("/curve-move/control/stop", HTTP_GET, [](AsyncWebServerRequest* request) {
     Serial.println("Stop command received...");
-    isRunning = false;
+    isCurveRunning = false;
     MotorX.setSpeed(0);
     MotorY.setSpeed(0);
     request->send(200, "text/plain", "Motor stopped");
   });
 
   // Handle set speed action
-  server.on("/control/setSpeed", HTTP_GET, [](AsyncWebServerRequest* request) {
+  server.on("/curve-move/control/setSpeed", HTTP_GET, [](AsyncWebServerRequest* request) {
     if (request->hasParam("speed")) {
       String speedStr = request->getParam("speed")->value();
-      angular_velocity_per_degree = speedStr.toFloat();      
+      angular_velocity_per_degree = speedStr.toFloat();
       Serial.println("Set speed command received...");
       Serial.print("New speed: ");
       Serial.println(angular_velocity_per_degree);
@@ -293,68 +527,88 @@ void setupServer() {
     }
   });
 
-  server.on("/control/manualMove", HTTP_GET, [](AsyncWebServerRequest* request) {
-    if (request->hasParam("direction") && request->hasParam("stepSize")) {
-      String direction = request->getParam("direction")->value();
-      String stepSizeStr = request->getParam("stepSize")->value();
-      float stepSize = stepSizeStr.toFloat();      
-      MotorX.setAcceleration(1000);
-      MotorY.setAcceleration(1000);
-      isManualMoveActive = true;
-      // Get the current positions
-      long currentX = MotorX.currentPosition();
-      long currentY = MotorY.currentPosition();
-      if (direction == "up") {                                    
-        MotorY.moveTo(currentY - (STEPS_PER_MM_Y * stepSize));                
-      } else if (direction == "down") {                
-        MotorY.moveTo(currentY + (STEPS_PER_MM_Y * stepSize) );        
-      } else if (direction == "left") {                
-        MotorX.moveTo(currentX + (  STEPS_PER_MM_X * stepSize));        
-      } else if (direction == "right") {                
-        MotorX.moveTo(currentX - ( STEPS_PER_MM_X * stepSize));        
-      } else {
-        MotorX.setAcceleration(0);  
-        MotorY.setAcceleration(0);  
-        Serial.println("Invalid direction parameter");
-        request->send(400, "text/plain", "Invalid direction parameter");
-        return;
-      }                   
-      request->send(200, "text/plain", "Manual move executed");
-    } else {
-      request->send(400, "text/plain", "Missing direction or stepSize parameter");
-    }
+  server.on("/curve-move/control/getSpeed", HTTP_GET, [](AsyncWebServerRequest* request) {
+    String speed = String(angular_velocity_per_degree);  // Read from EEPROM or default
+    request->send(200, "text/plain", speed);
   });
 
-  server.on("/control/stopManualMove", HTTP_GET, [](AsyncWebServerRequest* request) {
-    Serial.println("Stop motor...");
-    isManualMoveActive = false;    
+  server.on("/curve-move", HTTP_GET, [](AsyncWebServerRequest* request) {
+    request->send_P(200, "text/html", curve_move_html);
+  });
+
+  server.on("/fix-move/control/stop", HTTP_GET, [](AsyncWebServerRequest* request) {
+    Serial.println("fix-move Stop command received...");
+    isFixRunning = false; 
     MotorX.setSpeed(0);
     MotorY.setSpeed(0);
-    MotorX.moveTo(MotorX.currentPosition()); // Reset moveTo to current position
-    MotorY.moveTo(MotorY.currentPosition()); // Reset moveTo to current position        
     request->send(200, "text/plain", "Motor stopped");
   });
 
-  server.on("/control/getSpeed", HTTP_GET, [](AsyncWebServerRequest *request) {
-        String speed = String(angular_velocity_per_degree); // Read from EEPROM or default
-        request->send(200, "text/plain", speed);
+  server.on("/fix-move/control/start", HTTP_GET, [](AsyncWebServerRequest* request) {
+    if (request->hasParam("motorXSpeed") && request->hasParam("motorYSpeed")) {
+      // Correct parameter names
+      String motorXSpeedStr = request->getParam("motorXSpeed")->value();
+      float motorXSpeed = motorXSpeedStr.toFloat();
+      String motorYSpeedStr = request->getParam("motorYSpeed")->value();
+      float motorYSpeed = motorYSpeedStr.toFloat();
+
+      MotorX.setSpeed((motorXSpeed / 60) * STEPS_PER_MM_X);
+      MotorY.setSpeed((motorYSpeed / 60) * STEPS_PER_MM_Y);
+      isFixRunning = true;      
+      request->send(200, "text/plain", "fix move executed");
+    } else {
+      request->send(400, "text/plain", "Missing motorXSpeed or motorYSpeed parameter");
+    }
   });
 
+  server.on("/fix-move/control/setSpeed/X", HTTP_GET, [](AsyncWebServerRequest* request) {
+    if (request->hasParam("speed")) {
+      String speedStr = request->getParam("speed")->value();
+      fix_motor_x_speed = speedStr.toFloat();            
+      request->send(200, "text/plain", "Speed updated");
+    } else {
+      request->send(400, "text/plain", "Missing speed parameter");
+    }
+  });  
+  
+  server.on("/fix-move/control/setSpeed/Y", HTTP_GET, [](AsyncWebServerRequest* request) {
+    if (request->hasParam("speed")) {
+      String speedStr = request->getParam("speed")->value();
+      fix_motor_y_speed = speedStr.toFloat();            
+      request->send(200, "text/plain", "Speed updated");
+    } else {
+      request->send(400, "text/plain", "Missing speed parameter");
+    }
+  });
+
+  server.on("/fix-move/control/getSpeed/X", HTTP_GET, [](AsyncWebServerRequest* request) {
+    String speed = String(fix_motor_x_speed);  
+    request->send(200, "text/plain", speed);
+  });
+
+  server.on("/fix-move/control/getSpeed/Y", HTTP_GET, [](AsyncWebServerRequest* request) {
+    String speed = String(fix_motor_y_speed);  
+    request->send(200, "text/plain", speed);
+  });
+
+  server.on("/fix-move", HTTP_GET, [](AsyncWebServerRequest* request) {
+    request->send_P(200, "text/html", fix_move_html);
+  });
   server.begin();
 }
 
 void setup() {
   Serial.begin(115200);
-  Serial.flush();  
+  Serial.flush();
   setupWiFi();
-  delay(100);    
-  setupMotors();  
-  setupServer();  
+  delay(100);
+  setupMotors();
+  setupServer();
   current_angle = start_degree;
 }
 
 void loop() {
-  if (isRunning) {
+  if (isCurveRunning) {
     unsigned long currentTime = millis();
 
     // Update motor speeds at regular intervals
@@ -366,7 +620,7 @@ void loop() {
       float angular_velocity_per_ms = angular_velocity_per_degree * 1000;  // Convert seconds to milliseconds
       float degree_step = (UPDATE_INTERVAL / angular_velocity_per_ms);     // Degrees moved in this time interval
       current_angle += degree_step;
-      
+
       // Calculate arc length covered in this interval
       float delta_theta = degree_step * PI / 180.0;  // Convert degree_step to radians
       float arc_length = radius * delta_theta;       // Arc length in mm
@@ -392,22 +646,26 @@ void loop() {
       // Set motor speeds
       MotorX.setSpeed(speedX);
       MotorY.setSpeed(speedY * -1);
-    }    
+    }
     // Run the motors continuously
     MotorX.runSpeed();
     MotorY.runSpeed();
-  }  
+  }
   if (isManualMoveActive) {
-        MotorX.run();
-        MotorY.run();
+    MotorX.run();
+    MotorY.run();
 
-        // Check if the motors have reached their targets
-        if (!MotorX.isRunning() && !MotorY.isRunning()) {
-            isManualMoveActive = false;  // Stop manual move
-            MotorX.setAcceleration(0);  
-            MotorY.setAcceleration(0); 
-            Serial.println("Manual move completed.");
-        }
+    // Check if the motors have reached their targets
+    if (!MotorX.isRunning() && !MotorY.isRunning()) {
+      isManualMoveActive = false;  // Stop manual move
+      MotorX.setAcceleration(0);
+      MotorY.setAcceleration(0);
+      Serial.println("Manual move completed.");
     }
+  }
+  if (isFixRunning) {
+      MotorX.runSpeed();
+      MotorY.runSpeed();
+  }   
   yield();
 }
