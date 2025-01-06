@@ -431,6 +431,12 @@ long totalStepsX = 0;
 long totalStepsY = 0;
 long loop_counter = 0;
 
+void offAll() {
+  isCurveRunning = false;
+  isFixRunning = false;
+  isManualMoveActive = false;
+}
+
 void setupMotors() {
   MotorX.setMaxSpeed(10000);
   MotorY.setMaxSpeed(10000);
@@ -463,6 +469,7 @@ void setupServer() {
       float stepSize = stepSizeStr.toFloat();
       MotorX.setAcceleration(1000);
       MotorY.setAcceleration(1000);
+      offAll();
       isManualMoveActive = true;
       // Get the current positions
       long currentX = MotorX.currentPosition();
@@ -490,7 +497,8 @@ void setupServer() {
 
   server.on("/control/stopManualMove", HTTP_GET, [](AsyncWebServerRequest* request) {
     Serial.println("Stop motor...");
-    isManualMoveActive = false;
+    offAll();
+    //isManualMoveActive = false;
     MotorX.setSpeed(0);
     MotorY.setSpeed(0);
     MotorX.moveTo(MotorX.currentPosition());  // Reset moveTo to current position
@@ -501,13 +509,17 @@ void setupServer() {
 
   server.on("/curve-move/control/start", HTTP_GET, [](AsyncWebServerRequest* request) {
     Serial.println("Start command received...");
+    offAll();
     isCurveRunning = true;
+    MotorX.setAcceleration(0);
+    MotorY.setAcceleration(0);
     request->send(200, "text/plain", "Motor started");
   });
 
   server.on("/curve-move/control/stop", HTTP_GET, [](AsyncWebServerRequest* request) {
     Serial.println("Stop command received...");
-    isCurveRunning = false;
+    offAll();
+    //isCurveRunning = false;
     MotorX.setSpeed(0);
     MotorY.setSpeed(0);
     request->send(200, "text/plain", "Motor stopped");
@@ -554,6 +566,7 @@ void setupServer() {
 
       MotorX.setSpeed((motorXSpeed / 60) * STEPS_PER_MM_X);
       MotorY.setSpeed((motorYSpeed / 60) * STEPS_PER_MM_Y);
+      offAll();
       isFixRunning = true;      
       request->send(200, "text/plain", "fix move executed");
     } else {
@@ -607,12 +620,13 @@ void setup() {
   current_angle = start_degree;
 }
 
-void loop() {
-  if (isCurveRunning) {
+void loop() {    
+  if (isCurveRunning) {    
     unsigned long currentTime = millis();
 
     // Update motor speeds at regular intervals
     if (currentTime - lastUpdateTime >= UPDATE_INTERVAL) {
+      Serial.println("2");
       lastUpdateTime = currentTime;
       loop_counter += 1;
 
@@ -644,6 +658,10 @@ void loop() {
       float totalY_mm = totalStepsY / STEPS_PER_MM_Y;
 
       // Set motor speeds
+      Serial.println("speedX");
+      Serial.println(speedX);
+      Serial.println("speedY");
+      Serial.println(speedY );
       MotorX.setSpeed(speedX);
       MotorY.setSpeed(speedY * -1);
     }
@@ -651,19 +669,25 @@ void loop() {
     MotorX.runSpeed();
     MotorY.runSpeed();
   }
-  if (isManualMoveActive) {
+  else if (isManualMoveActive) {
+    Serial.println("3");
     MotorX.run();
     MotorY.run();
 
     // Check if the motors have reached their targets
     if (!MotorX.isRunning() && !MotorY.isRunning()) {
-      isManualMoveActive = false;  // Stop manual move
+      Serial.println("4");
+      offAll();
+      //isManualMoveActive = false;  // Stop manual move
       MotorX.setAcceleration(0);
       MotorY.setAcceleration(0);
+      MotorX.setSpeed(0); // new change
+      MotorY.setSpeed(0); // new change
       Serial.println("Manual move completed.");
     }
   }
-  if (isFixRunning) {
+  else if (isFixRunning) {
+      Serial.println("5");
       MotorX.runSpeed();
       MotorY.runSpeed();
   }   
